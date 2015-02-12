@@ -38,7 +38,7 @@ class YoutubeMediaUrlParser implements MediaUrlParser {
 	}
 	
 	public function checkUrlFromParsedUrl($parsed_url) {
-		return strpos($parsed_url['host'], $this->getName());
+		return strpos($parsed_url['host'], $this->getName()) !== false;
 	}
 
 	public function getIdFromParsedUrl($parsed_url) {
@@ -91,7 +91,7 @@ class YoutubeAliasMediaUrlParser implements MediaUrlParser {
 	}
 	
 	public function checkUrlFromParsedUrl($parsed_url) {
-		return strpos($parsed_url['host'], $this->getName());
+		return strpos($parsed_url['host'], $this->getName()) !== false;
 	}
 
 	public function getIdFromParsedUrl($parsed_url) {
@@ -126,7 +126,7 @@ class VimeoMediaUrlParser implements MediaUrlParser {
 	}
 	
 	public function checkUrlFromParsedUrl($parsed_url) {
-		return strpos($parsed_url['host'], $this->getName());
+		return strpos($parsed_url['host'], $this->getName()) !== false;
 	}
 
 	public function getIdFromParsedUrl($parsed_url) {
@@ -169,7 +169,7 @@ class FacebookMediaUrlParser implements MediaUrlParser {
 	}
 	
 	public function checkUrlFromParsedUrl($parsed_url) {
-		return strpos($parsed_url['host'], $this->getName());
+		return strpos($parsed_url['host'], $this->getName()) !== false;
 	}
 
 	public function getIdFromParsedUrl($parsed_url) {
@@ -224,7 +224,7 @@ class PinkbikeMediaUrlParser implements MediaUrlParser {
 	}
 	
 	public function checkUrlFromParsedUrl($parsed_url) {
-		return strpos($parsed_url['host'], $this->getName());
+		return strpos($parsed_url['host'], $this->getName()) !== false;
 	}
 
 	public function getIdFromParsedUrl($parsed_url) {
@@ -263,7 +263,7 @@ class YoukuMediaUrlParser implements MediaUrlParser {
 	}
 	
 	public function checkUrlFromParsedUrl($parsed_url) {
-		return strpos($parsed_url['host'], $this->getName());
+		return strpos($parsed_url['host'], $this->getName()) !== false;
 	}
 
 	public function getIdFromParsedUrl($parsed_url) {
@@ -305,7 +305,7 @@ class DailymotionMediaUrlParser implements MediaUrlParser {
 	}
 	
 	public function checkUrlFromParsedUrl($parsed_url) {
-		return strpos($parsed_url['host'], $this->getName());
+		return strpos($parsed_url['host'], $this->getName()) !== false;
 	}
 
 	public function getIdFromParsedUrl($parsed_url) {
@@ -356,15 +356,24 @@ abstract class MediaUrlParserManager {
 		return Self::$_parser_objects_array[$name];
 	}
 	
+	public static function getRealParser($name) {
+
+		if (empty($name) || !array_key_exists($name, Self::$_parser_objects_array)) {
+			return false;
+		}
+		
+		$parser = Self::$_parser_objects_array[$name];
+		while ($parser->getAliasFrom() !== false) {
+			$parser = Self::$_parser_objects_array[$parser->getAliasFrom()];
+		}
+		return $parser;
+	}
+	
 	public static function getParserFromParsedUrl($parsed_url) {
 		
 		$media_parser = false;
 		foreach (Self::$_parser_objects_array as $host => $parser) {
 			if ($parser->checkUrlFromParsedUrl($parsed_url)) {
-				while ($parser->getAliasFrom() !== false) {
-					$host = $parser->getAliasFrom();
-					$parser = Self::$_parser_objects_array[$host];
-				}
 				$media_parser = $parser;
 				break;
 			}
@@ -407,7 +416,9 @@ class MediaInfoBuilder {
 			return false;
 		}
 		
-		return (new Self())->setService($media_parser->getName())->setId($id)->create();
+		$real_parser = MediaUrlParserManager::getRealParser($media_parser->getName());
+		
+		return (new Self())->setService($real_parser->getName())->setId($id)->create();
 	}
 	
 	/*
